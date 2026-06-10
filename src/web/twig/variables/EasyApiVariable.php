@@ -5,7 +5,6 @@ namespace runwildstudio\easyapi\web\twig\variables;
 use Craft;
 use craft\elements\User as UserElement;
 use runwildstudio\easyapi\EasyApi;
-use runwildstudio\easyapi\models\ApiModel;
 use craft\fields\Checkboxes;
 use craft\fields\Color;
 use craft\fields\Date;
@@ -133,11 +132,11 @@ class EasyApiVariable extends ServiceLocator
             return "API " . $api->name . " is not configured for live site processing.";
         }
 
-        if ($apiUrl != null)
+        if ($apiUrl == null)
         {
-            $api->apiUrl = $apiUrl;
+            $apiUrl = $api->apiUrl;
         }
-        $response = EasyApi::$plugin->data->getRawData($api->apiUrl, $apiId);
+        $response = EasyApi::$plugin->data->getRawData($apiUrl, $apiId);
         return $response['data'];
     }
 
@@ -150,44 +149,6 @@ class EasyApiVariable extends ServiceLocator
     {
         return DateTimeHelper::toDateTime($dateTime);
     }
-
-
-    //
-    // Helper functions for element fields to get their first source. This is tricky as some elements
-    // support multiple sources (Entries, Users), whilst others can only have one (Tags, Categories)
-    //
-
-    // public function getAssetSourcesByField($field): ?array
-    // {
-    //     $sources = [];
-
-    //     if (!$field) {
-    //         return null;
-    //     }
-
-    //     if (is_array($field->sources)) {
-    //         foreach ($field->sources as $source) {
-    //             [, $uid] = explode(':', $source);
-
-    //             $sources[] = Craft::$app->volumes->getVolumeByUid($uid);
-    //         }
-    //     } elseif ($field->sources === '*') {
-    //         $sources = Craft::$app->volumes->getAllVolumes();
-    //     }
-
-    //     return $sources;
-    // }
-
-    // public function getCategorySourcesByField($field): ?CategoryGroup
-    // {
-    //     if (!$field) {
-    //         return null;
-    //     }
-
-    //     [, $uid] = explode(':', $field->source);
-
-    //     return Craft::$app->categories->getGroupByUid($uid);
-    // }
 
     public function getEntrySourcesByField($field): ?array
     {
@@ -221,18 +182,6 @@ class EasyApiVariable extends ServiceLocator
 
         return $sources;
     }
-
-    // public function getTagSourcesByField($field): ?TagGroup
-    // {
-    //     if (!$field) {
-    //         return null;
-    //     }
-
-    //     [, $uid] = explode(':', $field->source);
-
-    //     return Craft::$app->tags->getTagGroupByUid($uid);
-    // }
-
 
     //
     // Helper functions for element fields in getting their inner-element field layouts
@@ -282,100 +231,4 @@ class EasyApiVariable extends ServiceLocator
 
         return null;
     }
-
-    // public function getAssetFolderBySourceId($id): array
-    // {
-    //     $folders = Craft::$app->getAssets()->getFolderTreeByVolumeIds([$id]);
-
-    //     $return = [];
-
-    //     $return[''] = Craft::t('easyapi', 'Don\'t Import');
-
-    //     foreach ($folders as $folder) {
-    //         $return[] = [
-    //             'value' => 'root',
-    //             'label' => Craft::t('easyapi', 'Root Folder'),
-    //         ];
-
-    //         $children = $folder->getChildren();
-
-    //         if ($children) {
-    //             foreach ($children as $childFolder) {
-    //                 $return[] = [
-    //                     'value' => $childFolder['id'],
-    //                     'label' => $childFolder['name'],
-    //                 ];
-    //             }
-    //         }
-    //     }
-
-    //     return $return;
-    // }
-
-    // public function fieldCanBeUniqueId($field): bool
-    // {
-    //     $type = $field['type'] ?? 'attribute';
-
-    //     if (isset($field['type']) && $field['handle'] === 'parent') {
-    //         $type = 'parent';
-    //     }
-
-    //     if (is_object($field)) {
-    //         $type = get_class($field);
-    //     }
-
-    //     $supportedFields = [
-    //         Checkboxes::class,
-    //         Color::class,
-    //         Date::class,
-    //         Dropdown::class,
-    //         Email::class,
-    //         Lightswitch::class,
-    //         MultiSelect::class,
-    //         Number::class,
-    //         PlainText::class,
-    //         RadioButtons::class,
-    //         Url::class,
-    //     ];
-
-    //     $supportedValues = [
-    //         'assets',
-    //         'attribute',
-    //         'parent',
-    //     ];
-
-    //     $supported = array_merge($supportedFields, $supportedValues);
-
-    //     if (in_array($type, $supported, true)) {
-    //         return true;
-    //     }
-
-    //     // Include any field types that extend one of the above
-    //     foreach ($supportedFields as $supportedField) {
-    //         if (is_a($type, $supportedField, true)) {
-    //             return true;
-    //         }
-    //     }
-
-    //     return false;
-    // }
-
-    // public function supportedSubField($class): bool
-    // {
-    //     $supportedSubFields = [
-    //         Checkboxes::class,
-    //         Color::class,
-    //         Date::class,
-    //         Dropdown::class,
-    //         Lightswitch::class,
-    //         MultiSelect::class,
-    //         Number::class,
-    //         PlainText::class,
-    //         RadioButtons::class,
-    //         'craft\ckeditor\Field',
-    //         'craft\redactor\Field',
-    //     ];
-
-    //     return in_array($class, $supportedSubFields, true);
-    // }
 }

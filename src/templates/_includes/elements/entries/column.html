@@ -1,10 +1,17 @@
-{% if elementType|default(null) %}
-    {% set sectionId = api.elementGroup[elementType].section %}
-    {% set entryTypeId = api.elementGroup[elementType].entryType %}
+{% if elementType is defined and elementType %}
+    {% set group = api.elementGroup[elementType] ?? null %}
+
+    {% set sectionId = group.section ?? null %}
+    {% set entryTypeId = group.entryType ?? null %}
 
     {% if sectionId and entryTypeId %}
-        {% set section = craft.app.sections.getSectionById(sectionId) %}
-        {% set entryType = craft.app.sections.getEntryTypeById(entryTypeId) %}
+        {% if craft.app.version|version_compare('5.0', '>=') %}
+            {% set section = craft.app.entries.getSectionById(sectionId) %}
+            {% set entryType = craft.app.entries.getEntryTypeById(entryTypeId) %}
+        {% else %}
+            {% set section = craft.app.sections.getSectionById(sectionId) %}
+            {% set entryType = craft.app.sections.getEntryTypeById(entryTypeId) %}
+        {% endif %}
 
         {% if section and entryType %}
             <span class="element-group">{{ section.name }}</span>
@@ -12,11 +19,16 @@
         {% endif %}
     {% endif %}
 {% else %}
-    {% if parentElementType|default(null) %}
-        {% set sectionId = api.parentElementGroup[parentElementType].section %}
+    {% if parentElementType is defined and parentElementType %}
+        {% set parentGroup = api.parentElementGroup[parentElementType] ?? null %}
+        {% set sectionId = parentGroup.section ?? null %}
 
         {% if sectionId %}
-            {% set section = craft.app.sections.getSectionById(sectionId) %}
+            {% if craft.app.version|version_compare('5.0', '>=') %}
+                {% set section = craft.app.entries.getSectionById(sectionId) %}
+            {% else %}
+                {% set section = craft.app.sections.getSectionById(sectionId) %}
+            {% endif %}
 
             {% if section %}
                 <span class="element-group">{{ section.name }}</span>

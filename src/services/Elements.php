@@ -10,6 +10,7 @@ use runwildstudio\easyapi\base\ElementInterface;
 use runwildstudio\easyapi\elements\Asset;
 use runwildstudio\easyapi\elements\CalenderEvent;
 use runwildstudio\easyapi\elements\Category;
+use runwildstudio\easyapi\elements\CommerceOrder;
 use runwildstudio\easyapi\elements\CommerceProduct;
 use runwildstudio\easyapi\elements\DigitalProduct;
 use runwildstudio\easyapi\elements\Entry;
@@ -107,6 +108,7 @@ class Elements extends Component
         $elements = [
             Asset::class,
             Category::class,
+            CommerceOrder::class,
             CommerceProduct::class,
             Entry::class,
             Tag::class,

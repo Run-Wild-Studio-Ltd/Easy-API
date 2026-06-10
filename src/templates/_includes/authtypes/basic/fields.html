@@ -1,0 +1,23 @@
+{% import '_includes/forms' as forms %}
+
+<div id = "basicAuth" hidden>
+    {{ forms.textField({
+        label: "Authorization"|t('easyapi'),
+        instructions: "The value of the 'authorization' header field for the HTTP request."|t('easyapi'),
+        id: 'authorization',
+        name: 'authorization',
+        value: (api.authorization) ? api.authorization : '',
+        errors: api.getErrors('authorization'),
+        required: false,
+    }) }}
+    
+    {{ forms.textField({
+        label: "Custom Parameters"|t('easyapi'),
+        instructions: "Custom parameters to be used during authorization. These parameters must take the form key=value in a comma separated list."|t('easyapi'),
+        id: 'authorizationCustomParametersBasic',
+        name: 'authorizationCustomParametersBasic',
+        value: (api.authorizationCustomParameters and api.authorizationType == 'basic') ? api.authorizationCustomParameters : '',
+        errors: api.getErrors('authorizationCustomParameters'),
+        required: false,
+    }) }}
+</div>

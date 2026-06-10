@@ -2,14 +2,8 @@
 
 {% if elementType is defined and elementType %}
     {% set typeId = api.elementGroup[elementType] ?? null %}
-    {% if typeId %}
-        {% set group = craft.commerce.productTypes.getProductTypeById(typeId) %}
-    {% endif %}
 {% elseif parentElementType is defined and parentElementType %}
     {% set typeId = api.parentElementGroup[parentElementType] ?? null %}
-    {% if typeId %}
-        {% set group = craft.commerce.productTypes.getProductTypeById(typeId) %}
-    {% endif %}
 {% endif %}
 
 {{ group.name ?? '' }}

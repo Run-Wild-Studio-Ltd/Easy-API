@@ -2,13 +2,26 @@
 
 {% set productTypes = element.groups %}
 
-{{ forms.selectField({
-    label: "Commerce Product Type"|t('easyapi'),
-    instructions: 'Choose the Commerce product type you want to to save your api data into.'|t('easyapi'),
-    id: 'elementGroup-' ~ elementType,
-    name: 'elementGroup[' ~ elementType ~ ']',
-    options: craft.easyApi.getSelectOptions(productTypes),
-    value: api.elementGroup[elementType] ?? '',
-    errors: api.getErrors('elementGroup'),
-    required: true,
-}) }}
+{% if elementType|default(null) %}
+	{{ forms.selectField({
+	    label: "Commerce Product Type"|t('easyapi'),
+	    instructions: 'Choose the Commerce product type you want to save your api data into.'|t('easyapi'),
+	    id: 'elementGroup-' ~ elementType,
+	    name: 'elementGroup[' ~ elementType ~ ']',
+	    options: craft.easyApi.getSelectOptions(productTypes),
+	    value: api.elementGroup[elementType] ?? '',
+	    errors: api.getErrors('elementGroup'),
+	    required: true,
+	}) }}
+{% else %}
+    {{ forms.selectField({
+	    label: "Commerce Product Type"|t('easyapi'),
+	    instructions: 'Choose the Commerce product type you want to save your api data into.'|t('easyapi'),
+        id: 'parentElementGroup-' ~ parentElementType,
+        name: 'parentElementGroup[' ~ parentElementType ~ ']',
+        options: craft.easyApi.getSelectOptions(productTypes),
+        value: api.parentElementGroup[parentElementType] ?? '',
+        errors: api.getErrors('parentElementGroup'),
+	    required: true,
+    }) }}
+{% endif %}

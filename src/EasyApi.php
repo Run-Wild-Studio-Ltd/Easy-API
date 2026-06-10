@@ -9,15 +9,17 @@ use craft\feedme\events\FeedDataEvent;
 use craft\feedme\events\FeedEvent;
 use craft\feedme\services\DataTypes;
 use craft\feedme\services\Feeds;
+use craft\feedme\services\Process as FeedMeProcess;
 use craft\helpers\UrlHelper;
 use craft\web\twig\variables\CraftVariable;
 use craft\web\UrlManager;
 use runwildstudio\easyapi\base\PluginTrait;
 use runwildstudio\easyapi\models\Settings;
+use runwildstudio\easyapi\services\Apis;
 use runwildstudio\easyapi\services\EasyApiAuthTypes;
 use runwildstudio\easyapi\services\EasyApiDataTypes;
 use runwildstudio\easyapi\services\Elements;
-use runwildstudio\easyapi\services\Apis;
+use runwildstudio\easyapi\services\FeedMeEvents;
 use runwildstudio\easyapi\services\Fields;
 use runwildstudio\easyapi\services\Logs;
 use runwildstudio\easyapi\services\Process;
@@ -63,12 +65,13 @@ class EasyApi extends \craft\base\Plugin
                 'logs' => ['class' => Logs::class],
                 'process' => ['class' => Process::class],
                 'service' => ['class' => Service::class],
+                'feedme' => ['class' => FeedMeEvents::class],
             ],
         ];
     }
 
     public string $minVersionRequired = '4.4.0';
-    public string $schemaVersion = '5.1.0.0';
+    public string $schemaVersion = '5.1.1.0';
     public bool $hasCpSettings = true;
     public bool $hasCpSection = true;
 
@@ -179,7 +182,7 @@ class EasyApi extends \craft\base\Plugin
     {
         Event::on(DataTypes::class, DataTypes::EVENT_BEFORE_FETCH_FEED, function(FeedDataEvent $event) {
             // This will set the feed's data
-            $this->data->getDataForFeedMe($event);
+            $this->feedme->getDataForFeedMe($event);
         });
     }
 }

@@ -16,4 +16,14 @@ interface AuthTypeInterface extends ComponentInterface
      * @return mixed
      */
     public function getAuthValue($api): mixed;
+
+    /**
+     * @return mixed
+     */
+    public function getFieldsTemplate(): string;
+
+    /**
+     * @return string
+     */
+    public function getClass(): string;
 }

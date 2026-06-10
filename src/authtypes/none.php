@@ -4,34 +4,54 @@ namespace runwildstudio\easyapi\authtypes;
 
 use Craft;
 use runwildstudio\easyapi\base\AuthType;
-use runwildstudio\easyapi\base\AuthTypeInterface;
-use runwildstudio\easyapi\EasyApi;
 use Exception;
 
-class none extends AuthType implements AuthTypeInterface
+class none extends AuthType
 {
-    // Properties
-    // =========================================================================
-
     /**
      * @var string
      */
     public static string $name = 'None';
-
-
-    // Public Methods
-    // =========================================================================
 
     /**
      * @inheritDoc
      */
     public function getAuthValue($api): array
     {
-        // Make sure auth has been populated!
-        if (!($api->authorization === undefined || $api->authorization === '')) {
-            return ['success' => false, 'error' => 'Authorization value has been specified incorrectly.'];
-        }
+        try {
+            // In "None" auth, authorization should be empty/null.
+            // Use null-coalesce in case property isn't set.
+            $auth = $api->authorization ?? null;
 
-        return ['success' => true, 'value' => $api->authorization];
+            // If anything has been provided, treat it as misconfigured
+            if (!($auth === null || $auth === '')) {
+                return [
+                    'success' => false,
+                    'error' => 'Authorization value has been specified incorrectly.'
+                ];
+            }
+
+            // Match oauth behaviour: return a string "value"
+            // For no-auth, this should be an empty string.
+            return [
+                'success' => true,
+                'value' => ''
+            ];
+        } catch (Exception $e) {
+            Craft::$app->getErrorHandler()->logException($e);
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getFieldsTemplate(): string
+    {
+        return 'easyapi/_includes/authtypes/none/fields';
     }
 }

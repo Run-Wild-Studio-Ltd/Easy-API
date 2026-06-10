@@ -1,0 +1,125 @@
+{% import '_includes/forms' as forms %}
+
+<div id = "oauthAuth" hidden>
+    {{ forms.textField({
+        label: "URL"|t('easyapi'),
+        instructions: "The URL used for authorization."|t('easyapi'),
+        id: 'authorizationUrl',
+        name: 'authorizationUrl',
+        value: (api.authorizationUrl) ? api.authorizationUrl : '',
+        errors: api.getErrors('authorizationUrl'),
+        required: true,
+    }) }}
+
+    {{ forms.textField({
+        label: "App ID"|t('easyapi'),
+        instructions: "The value of App ID used for authentication."|t('easyapi'),
+        id: 'authorizationAppId',
+        name: 'authorizationAppId',
+        value: (api.authorizationAppId) ? api.authorizationAppId : '',
+        errors: api.getErrors('authorizationAppId'),
+        required: true,
+    }) }}
+
+    {{ forms.textField({
+        label: "App Secret"|t('easyapi'),
+        instructions: "The value of App Secret used for authentication."|t('easyapi'),
+        id: 'authorizationAppSecret',
+        name: 'authorizationAppSecret',
+        value: (api.authorizationAppSecret) ? api.authorizationAppSecret : '',
+        errors: api.getErrors('authorizationAppSecret'),
+        required: true,
+    }) }}
+    
+    {{ forms.selectField({
+        label: "Grant Type"|t('easyapi'),
+        instructions: "The value of grant type used for authentication."|t('easyapi'),
+        id: 'authorizationGrantType',
+        name: 'authorizationGrantType',
+        options: {
+            "authorization_code": "authorization_code"|t("easyapi"),
+            "password": "password"|t("easyapi"),
+            "client_credentials": "client_credentials"|t("easyapi"),
+        },
+        value: api.authorizationGrantType,
+        errors: api.getErrors('authorizationGrantType'),
+        required: true,
+    }) }}
+
+    <div id="password" hidden>
+        {{ forms.textField({
+            label: "User"|t('easyapi'),
+            instructions: "The user used for authentication."|t('easyapi'),
+            id: 'authorizationUsername',
+            name: 'authorizationUsername',
+            value: (api.authorizationUsername) ? api.authorizationUsername : '',
+            errors: api.getErrors('authorizationUsername'),
+            required: false,
+        }) }}
+
+        {{ forms.textField({
+            label: "Password"|t('easyapi'),
+            instructions: "The password used for authentication."|t('easyapi'),
+            id: 'authorizationPassword',
+            name: 'authorizationPassword',
+            value: (api.authorizationPassword) ? api.authorizationPassword : '',
+            errors: api.getErrors('authorizationPassword'),
+            required: false,
+        }) }}
+    </div>
+
+    <div id="authorization_code" hidden>
+        {{ forms.textField({
+            label: "Redirect URL"|t('easyapi'),
+            instructions: "The authorization redirect URL."|t('easyapi'),
+            id: 'authorizationRedirect',
+            name: 'authorizationRedirect',
+            value: (api.authorizationRedirect) ? api.authorizationRedirect : '',
+            errors: api.getErrors('authorizationRedirect'),
+            required: false,
+        }) }}
+
+        {{ forms.textField({
+            label: "Custom Code"|t('easyapi'),
+            instructions: "Custom code to be used during authorization."|t('easyapi'),
+            id: 'authorizationCode',
+            name: 'authorizationCode',
+            value: (api.authorizationCode) ? api.authorizationCode : '',
+            errors: api.getErrors('authorizationCode'),
+            required: false,
+        }) }}
+    </div>
+
+    {{ forms.textField({
+        label: "Custom Parameters"|t('easyapi'),
+        instructions: "Custom parameters to be used during authorization. These parameters must take the form key=value in a comma separated list."|t('easyapi'),
+        id: 'authorizationCustomParameters',
+        name: 'authorizationCustomParameters',
+        value: (api.authorizationCustomParameters and api.authorizationType == 'oauth') ? api.authorizationCustomParameters : '',
+        errors: api.getErrors('authorizationCustomParameters'),
+        required: false,
+    }) }}
+</div>
+
+{% js %}
+    $(document).ready(function() {
+        // Save initial value of authorizationGrantType
+        var lastGrantType = $('#authorizationGrantType').val().toLowerCase();
+
+        // Function to toggle visibility of sections
+        function toggleGrantSection(newGrantType) {
+            $('#' + lastGrantType).hide();
+            $('#' + newGrantType).show();
+            lastGrantType = newGrantType;
+        }
+
+        // Show the section for the initial value of authorizationType
+        $('#' + lastGrantType).show();
+
+        // Handle change event
+        $('#authorizationGrantType').change(function() {
+            var newGrantType = $(this).val().toLowerCase();
+            toggleGrantSection(newGrantType);
+        });
+    });
+{% endjs %}

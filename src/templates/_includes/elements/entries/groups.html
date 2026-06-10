@@ -24,7 +24,11 @@
     {% endif %}
 
     {% if sectionId %}
-        {% set section = craft.app.sections.getSectionById(sectionId) %}
+        {% if craft.app.version|version_compare('5.0', '>=') %}   
+            {% set section = craft.app.entries.getSectionById(sectionId) %}
+        {% else %}
+            {% set section = craft.app.sections.getSectionById(sectionId) %}
+        {% endif %} 
 
         {% if section %}
             {% set sectionEntryTypes = section.getEntryTypes() %}
@@ -80,7 +84,11 @@
     {% endif %}
 
     {% if parentSectionId %}
-        {% set section = craft.app.sections.getSectionById(parentSectionId) %}
+        {% if craft.app.version|version_compare('5.0', '>=') %}   
+            {% set section = craft.app.entries.getSectionById(parentSectionId) %}
+        {% else %}
+            {% set section = craft.app.sections.getSectionById(parentSectionId) %}
+        {% endif %}  
 
         {% if section %}
             {% set parentSectionEntryTypes = section.getEntryTypes() %}

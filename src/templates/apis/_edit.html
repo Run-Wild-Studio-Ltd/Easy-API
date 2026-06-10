@@ -25,7 +25,7 @@
 {% set buttons %}
     <div class="buttons">
         <input type="button" data-action="easyapi/apis/save-api" class="btn submit" value="{{ 'Save'|t('easyapi') }}">
-        <input type="button" data-action="easyapi/apis/save-and-element-api" class="btn submit useBackground" {% if api.useLive %} style="display:none"{% endif %} value="{{ 'Save & Continue'|t('easyapi') }}">
+        <input type="button" data-action="easyapi/apis/save-and-element-api" class="btn submit useBackground" {% if api.useLive or api.postImportHandler != '' %} style="display:none"{% endif %} value="{{ 'Save & Continue'|t('easyapi') }}">
     </div>
 {% endset %}
 
@@ -45,18 +45,6 @@
     {% for elementClass, element in elements %}
         {% set elementsList = elementsList|merge({ (elementClass): element.name }) %}
     {% endfor %}
-
-    {# {{ forms.textField({
-        first: true,
-        label: "Feed ID"|t('easyapi'),
-        instructions: "What this api will be called in the CP."|t('easyapi'),
-        id: 'feedId',
-        name: 'feedId',
-        value: api.feedId,
-        errors: api.getErrors('feedId'),
-        autofocus: true,
-        required: true,
-    }) }} #}
 
     {{ forms.textField({
         first: true,
@@ -135,15 +123,57 @@
         required: true,
     }) }}
 
-    {{ forms.textField({
-        label: "Authorization"|t('easyapi'),
-        instructions: "The value of the 'authorization' header field for the HTTP request."|t('easyapi'),
-        id: 'authorization',
-        name: 'authorization',
-        value: (api.authorization) ? api.authorization : '',
-        errors: api.getErrors('authorization'),
+    <hr>
+    <h2>{{ 'Authorization'|t('easyapi') }}</h2>
+
+    {{ forms.selectField({
+        label: "Type"|t('easyapi'),
+        instructions: 'Choose how you are authorizing your API.'|t('easyapi'),
+        id: 'authorizationType',
+        name: 'authorizationType',
+        options: authTypes,
+        value: api.authorizationType,
+        errors: api.getErrors('authorizationType'),
         required: true,
     }) }}
+
+    {% for authTypeClass in authTypeClasses %}
+        <div class="authType-select">
+            {% include authTypeClass.fieldsTemplate ignore missing %}
+        </div>
+    {% endfor %}
+
+    <hr>
+    <h2>{{ 'Pagination'|t('easyapi') }}</h2>
+
+    {{ forms.textField({
+        label: "Offset Field"|t('easyapi'),
+        instructions: "Path in the API data which is used for API pagination."|t('easyapi'),
+        id: 'offsetField',
+        name: 'offsetField',
+        value: api.offsetField,
+        errors: api.getErrors('offsetField'),
+    }) }}
+
+    {{ forms.textField({
+        label: "URL Update Code"|t('easyapi'),
+        instructions: "Value to append to the API URL for pagination include {{ Offset }} to insert the value of the Offset Field."|t('easyapi'),
+        id: 'offsetUpateURL',
+        name: 'offsetUpateURL',
+        value: api.offsetUpateURL,
+        errors: api.getErrors('offsetUpateURL'),
+    }) }}
+
+    {{ forms.textField({
+        label: "Offset Termination"|t('easyapi'),
+        instructions: "When this value is found in the data then stop pagination logic."|t('easyapi'),
+        id: 'offsetTermination',
+        name: 'offsetTermination',
+        value: api.offsetTermination,
+        errors: api.getErrors('offsetTermination'),
+    }) }}
+
+    {# <hr> #}
 
     {# TODO: The below commented out fields will be used in future release so not removing them entirely #}
 
@@ -196,11 +226,6 @@
     <hr>
     <h2>{{ 'Feed Me fields'|t('feed-me') }}</h2>
     <p>{{ 'The following fields need to be selected in order to create the related Feed Me feed for data mapping.'|t('feed-me') }}</p>
-
-    {% set elementsList = [] %}
-    {% for elementClass, element in elements %}
-        {% set elementsList = elementsList|merge({ (elementClass): element.name }) %}
-    {% endfor %}
 
     {{ forms.selectField({
         label: "Element Type"|t('feed-me'),
@@ -285,6 +310,15 @@
         checked: api.useLive,
     }) }}
 
+    {{ forms.textField({
+        label: "Post-api call Module Handler"|t('easyapi'),
+        instructions: "Enter the handler key of the module to run after the api is called but before the data is sent to FeedMe. Example: moduleKey.method"|t('easyapi'),
+        id: 'postImportHandler',
+        name: 'postImportHandler',
+        value: api.postImportHandler ?? '',
+    }) }}
+
+
     <div class="useBackground" {% if api.useLive %} style="display:none"{% endif %}>
     {{ forms.checkboxField({
         id: 'queueRequest',
@@ -311,6 +345,27 @@
 {% endblock %}
 
 {% js %}
+    $(document).ready(function() {
+        // Save initial value of authorizationType
+        var lastAuthType = $('#authorizationType').val().toLowerCase();
+
+        // Function to toggle visibility of sections
+        function toggleAuthSection(newAuthType) {
+            $('#' + lastAuthType + 'Auth').hide();
+            $('#' + newAuthType + 'Auth').show();
+            lastAuthType = newAuthType;
+        }
+
+        // Show the section for the initial value of authorizationType
+        $('#' + lastAuthType + 'Auth').show();
+
+        // Handle change event
+        $('#authorizationType').change(function() {
+            var newAuthType = $(this).val().toLowerCase();
+            toggleAuthSection(newAuthType);
+        });
+    });
+
     $('#useLive').change(function() {
         // Toggle visibility of the target divs based on checkbox state
         $('.useBackground').toggle(!this.checked);

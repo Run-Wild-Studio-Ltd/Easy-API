@@ -12,7 +12,7 @@ use craft\helpers\UrlHelper;
  * @property-read mixed $name
  * @property-read mixed $class
  */
-abstract class AuthType extends Component
+abstract class AuthType extends Component implements AuthTypeInterface
 {
     // Public
     // =========================================================================

@@ -37,8 +37,14 @@ class Install extends Migration
             'authorizationUrl' => $this->string(),
             'authorizationAppId' => $this->string(),
             'authorizationAppSecret' => $this->string(),
+            'authorizationScope' => $this->string(),
+            'authorizationGrantType' => $this->string(),
+            'authorizationUsername' => $this->string(),
+            'authorizationPassword' => $this->string(),
             'authorizationRedirect' => $this->string(),
             'authorizationCode' => $this->string(),
+            'authorizationRefreshToken' => $this->string(),
+            'authorizationCustomParameters' => $this->string(),
             'authorization' => $this->string(),
             'httpAction' => $this->string(),
             'updateElementIdField' => $this->text(),
@@ -51,6 +57,9 @@ class Install extends Migration
             'parentElementGroup' => $this->text(),
             'parentElementIdField' => $this->text(),
             'parentFilter' => $this->text(),
+            'offsetField' => $this->text(),
+            'offsetUpateURL' => $this->text(),
+            'offsetTermination' => $this->text(),
             'queueRequest' => $this->boolean()->notNull()->defaultValue(false),
             'queueOrder' => $this->text(),
             'useLive' => $this->boolean()->notNull()->defaultValue(false),
@@ -64,6 +73,7 @@ class Install extends Migration
             'elementType' => $this->string()->notNull(),
             'elementGroup' => $this->text(),
             'duplicateHandle' => $this->text(),
+            'postImportHandler' => $this->string(),
         ]);
     }
 

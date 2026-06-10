@@ -1,0 +1,150 @@
+{% import '_includes/forms' as forms %}
+
+<div id="oauth2Auth" hidden>
+
+    {{ forms.textField({
+        label: "Token URL"|t('easyapi'),
+        instructions: "The OAuth2 token endpoint URL."|t('easyapi'),
+        id: 'authorizationUrl',
+        name: 'authorizationUrl',
+        value: api.authorizationUrl ?? '',
+        errors: api.getErrors('authorizationUrl'),
+        required: true,
+    }) }}
+
+    {{ forms.textField({
+        label: "Client ID"|t('easyapi'),
+        instructions: "OAuth2 Client ID."|t('easyapi'),
+        id: 'authorizationAppId',
+        name: 'authorizationAppId',
+        value: api.authorizationAppId ?? '',
+        errors: api.getErrors('authorizationAppId'),
+        required: true,
+    }) }}
+
+    {{ forms.textField({
+        label: "Client Secret"|t('easyapi'),
+        instructions: "OAuth2 Client Secret."|t('easyapi'),
+        id: 'authorizationAppSecret',
+        name: 'authorizationAppSecret',
+        value: api.authorizationAppSecret ?? '',
+        errors: api.getErrors('authorizationAppSecret'),
+        required: true,
+    }) }}
+
+    {{ forms.textField({
+        label: "Scope"|t('easyapi'),
+        instructions: "OAuth2 scope (e.g. https://graph.microsoft.com/.default). Required for some providers, especially Azure Client Credentials grant."|t('easyapi'),
+        id: 'authorizationScope',
+        name: 'authorizationScope',
+        value: api.authorizationScope ?? '',
+        errors: api.getErrors('authorizationScope'),
+    }) }}
+
+    {{ forms.selectField({
+        label: "Grant Type"|t('easyapi'),
+        instructions: "OAuth2 grant type."|t('easyapi'),
+        id: 'oauth2-authorizationGrantType',
+        name: 'authorizationGrantType',
+        options: {
+            "client_credentials": "Client Credentials"|t('easyapi'),
+            "authorization_code": "Authorization Code"|t('easyapi'),
+            "password": "Password"|t('easyapi'),
+            "refresh_token": "Refresh Token"|t('easyapi'),
+        },
+        value: api.authorizationGrantType,
+        errors: api.getErrors('authorizationGrantType'),
+        required: true,
+    }) }}
+
+    <!-- Password Grant -->
+    <div id="oauth2-password" hidden>
+        {{ forms.textField({
+            label: "Username"|t('easyapi'),
+            instructions: "Username for password grant."|t('easyapi'),
+            id: 'authorizationUsername',
+            name: 'authorizationUsername',
+            value: api.authorizationUsername ?? '',
+            errors: api.getErrors('authorizationUsername'),
+        }) }}
+
+        {{ forms.textField({
+            label: "Password"|t('easyapi'),
+            instructions: "Password for password grant."|t('easyapi'),
+            id: 'authorizationPassword',
+            name: 'authorizationPassword',
+            value: api.authorizationPassword ?? '',
+            errors: api.getErrors('authorizationPassword'),
+        }) }}
+    </div>
+
+    <!-- Authorization Code Grant -->
+    <div id="oauth2-authorization_code" hidden>
+        {{ forms.textField({
+            label: "Redirect URL"|t('easyapi'),
+            instructions: "Redirect URL."|t('easyapi'),
+            id: 'authorizationRedirect',
+            name: 'authorizationRedirect',
+            value: api.authorizationRedirect ?? '',
+            errors: api.getErrors('authorizationRedirect'),
+        }) }}
+
+        {{ forms.textField({
+            label: "Authorization Code"|t('easyapi'),
+            instructions: "Code provided by the OAuth2 provider."|t('easyapi'),
+            id: 'authorizationCode',
+            name: 'authorizationCode',
+            value: api.authorizationCode ?? '',
+            errors: api.getErrors('authorizationCode'),
+        }) }}
+    </div>
+
+    <!-- Refresh Token Grant -->
+    <div id="oauth2-refresh_token" hidden>
+        {{ forms.textField({
+            label: "Refresh Token"|t('easyapi'),
+            instructions: "Refresh token for generating new access tokens."|t('easyapi'),
+            id: 'authorizationRefreshToken',
+            name: 'authorizationRefreshToken',
+            value: api.authorizationRefreshToken ?? '',
+            errors: api.getErrors('authorizationRefreshToken'),
+        }) }}
+    </div>
+
+    {{ forms.textField({
+        label: "Custom Parameters"|t('easyapi'),
+        instructions: "Comma-separated list of key=value parameters."|t('easyapi'),
+        id: 'authorizationCustomParameters',
+        name: 'authorizationCustomParameters',
+        value: (api.authorizationCustomParameters and api.authorizationType == 'oauth2') ? api.authorizationCustomParameters : '',
+        errors: api.getErrors('authorizationCustomParameters'),
+    }) }}
+
+</div>
+
+{% js %}
+$(document).ready(function () {
+
+    var selector = '#oauth2-authorizationGrantType';
+    var lastGrantType = $(selector).val();
+
+    function toggleSection(type) {
+        // Hide previous section
+        $('#oauth2-' + lastGrantType).hide();
+
+        // Show new section
+        $('#oauth2-' + type).show();
+
+        lastGrantType = type;
+    }
+
+    // Initial load
+    toggleSection(lastGrantType);
+
+    // Change handler only for OAuth2 select
+    $(selector).change(function () {
+        toggleSection($(this).val());
+    });
+
+});
+{% endjs %}

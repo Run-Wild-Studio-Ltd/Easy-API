@@ -11,6 +11,7 @@ use runwildstudio\easyapi\base\AuthTypeInterface;
 use runwildstudio\easyapi\authtypes\basic;
 use runwildstudio\easyapi\authtypes\none;
 use runwildstudio\easyapi\authtypes\oauth;
+use runwildstudio\easyapi\authtypes\oauth2;
 use runwildstudio\easyapi\events\ApiAuthEvent;
 use runwildstudio\easyapi\events\RegisterEasyApiAuthTypesEvent;
 use runwildstudio\easyapi\models\ApiModel;
@@ -98,11 +99,16 @@ class EasyApiAuthTypes extends Component
      */
     public function getRegisteredApiAuthTypes(): array
     {
+        if (count($this->_authTypes)) {
+            return $this->_authTypes;
+        }
+
         $event = new RegisterEasyApiAuthTypesEvent([
             'authTypes' => [
                 none::class,
                 basic::class,
                 oauth::class,
+                oauth2::class,
             ],
         ]);
 

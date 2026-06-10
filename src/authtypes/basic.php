@@ -4,11 +4,10 @@ namespace runwildstudio\easyapi\authtypes;
 
 use Craft;
 use runwildstudio\easyapi\base\AuthType;
-use runwildstudio\easyapi\base\AuthTypeInterface;
 use runwildstudio\easyapi\EasyApi;
 use Exception;
 
-class basic extends AuthType implements AuthTypeInterface
+class basic extends AuthType
 {
     // Properties
     // =========================================================================
@@ -18,7 +17,6 @@ class basic extends AuthType implements AuthTypeInterface
      */
     public static string $name = 'Basic';
 
-
     // Public Methods
     // =========================================================================
 
@@ -27,11 +25,35 @@ class basic extends AuthType implements AuthTypeInterface
      */
     public function getAuthValue($api): array
     {
-        // Make sure auth has been populated!
-        if ($api->authorization === undefined || $api->authorization === '') {
-            return ['success' => false, 'error' => 'Authorization value not specified'];
+        $auth = [];
+        // Parse custom parameters
+        if (!empty($api->authorizationCustomParameters)) {
+            $authorizationCustomParameters = explode(',', $api->authorizationCustomParameters);
+            foreach ($authorizationCustomParameters as $param) {
+                list($key, $value) = explode('=', trim($param));
+                $auth[] = trim($key) . ': ' . trim($value);
+            }
         }
 
-        return ['success' => true, 'value' => $api->authorization];
+        // Make sure auth has been populated!
+        if ($api->authorization != '') {
+            $auth[] = 'Authorization: ' . $api->authorization;
+        }
+
+        if (count($auth) > 0) {
+            return ['success' => true, 'value' => $auth];
+        }
+        return ['success' => false, 'error' => 'Authorization value not specified'];
+    }
+
+    // Templates
+    // =========================================================================
+
+    /**
+     * @inheritDoc
+     */
+    public function getFieldsTemplate(): string
+    {
+        return 'easyapi/_includes/authtypes/basic/fields';
     }
 }

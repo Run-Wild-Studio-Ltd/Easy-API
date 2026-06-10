@@ -145,6 +145,37 @@ class DataHelper
      * @param array|ApiModel|null $api
      * @return array|ArrayAccess|mixed|null
      */
+    public static function updateOffsetValue($api, &$feedData)
+    {
+        $node = $api->offsetField;
+        $offsetUpateURL = $api->offsetUpateURL;
+        $offsetTermination = $api->offsetTermination;
+        $value = null;
+
+        foreach ($feedData as $nodePath => &$nodeValue) { // Note the & before $nodeValue
+            $feedPath = preg_replace('/(\/\d+\/)/', '/', $nodePath);
+            $feedPath = preg_replace('/^(\d+\/)|(\/\d+)/', '', $feedPath);
+        
+            if ($feedPath == $node || $nodePath == $node) {
+                if ($nodeValue === null || $nodeValue === '' || $nodeValue == $offsetTermination) {
+                    // Don't add value to array
+                } else {
+                    $modifiedString = str_replace('{{ Offset }}', $nodeValue, $offsetUpateURL);
+                    $nodeValue = $api->apiUrl . $modifiedString; // This now updates the original array
+                }
+            }
+        }
+        
+        // Important: Always unset the reference after the loop to avoid unexpected behavior
+        unset($nodeValue);
+    }
+
+    /**
+     * @param $apiData
+     * @param $fieldInfo
+     * @param array|ApiModel|null $api
+     * @return array|ArrayAccess|mixed|null
+     */
     public static function fetchValue($apiData, $fieldInfo, $api = null): mixed
     {
         // $api will be an ApiModel when calling `fetchValue` from an element

@@ -93,8 +93,15 @@ class Entries extends Field implements FieldInterface
             foreach ($sources as $source) {
                 // When singles is selected as the only option to search in, it doesn't contain any ids...
                 if ($source == 'singles') {
-                    foreach (Craft::$app->getSections()->getAllSections() as $section) {
-                        $sectionIds[] = ($section->type == 'single') ? $section->id : '';
+
+                    if (version_compare(Craft::$app->getVersion(), '5.0', '>=')) {
+                        foreach (Craft::$app->getEntries()->getAllSections() as $section) {
+                            $sectionIds[] = ($section->type == 'single') ? $section->id : '';
+                        }
+                    } else {
+                        foreach (Craft::$app->getSections()->getAllSections() as $section) {
+                            $sectionIds[] = ($section->type == 'single') ? $section->id : '';
+                        }
                     }
                 } else {
                     [, $uid] = explode(':', $source);

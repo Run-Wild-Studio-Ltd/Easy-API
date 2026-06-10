@@ -78,7 +78,13 @@ class Entry extends Element
      */
     public function getGroups(): array
     {
-        $editable = Craft::$app->getSections()->getEditableSections();
+        if (version_compare(Craft::$app->getVersion(), '5.0', '>=')) {
+            // Code specific to Craft 5
+            $editable = Craft::$app->getEntries()->getEditableSections();
+        } else {
+            // Code specific to Craft 4
+            $editable = Craft::$app->getSections()->getEditableSections();
+        }
         $groups = [];
 
         foreach ($editable as $section) {
@@ -127,7 +133,14 @@ class Entry extends Element
         $this->element->sectionId = $settings['elementGroup'][EntryElement::class]['section'];
         $this->element->typeId = $settings['elementGroup'][EntryElement::class]['entryType'];
 
-        $section = Craft::$app->getSections()->getSectionById($this->element->sectionId);
+        
+        if (version_compare(Craft::$app->getVersion(), '5.0', '>=')) {
+            // Code specific to Craft 5
+            $section = Craft::$app->getEntries()->getSectionById($this->element->sectionId);
+        } else {
+            // Code specific to Craft 4
+            $section = Craft::$app->getSections()->getSectionById($this->element->sectionId);
+        }
         $siteId = Hash::get($settings, 'siteId');
 
         if ($siteId) {
