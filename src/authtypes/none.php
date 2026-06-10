@@ -13,6 +13,9 @@ class none extends AuthType
      */
     public static string $name = 'None';
 
+    // Public Methods
+    // =========================================================================
+
     /**
      * @inheritDoc
      */
@@ -46,6 +49,9 @@ class none extends AuthType
             ];
         }
     }
+
+    // Templates
+    // =========================================================================
 
     /**
      * @inheritDoc

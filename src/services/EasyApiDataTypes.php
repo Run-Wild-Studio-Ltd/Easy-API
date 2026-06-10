@@ -138,6 +138,16 @@ class EasyApiDataTypes extends Component
 
         try {
             $curl = curl_init();
+            $curl_Header = [];
+            if (is_array($auth['value'])) {
+                // Merge the associative array with the existing array
+                $curl_Header['Content-Type'] = 'application/' . $api->contentType;
+                $curl_Header = array_merge($curl_Header, $auth['value']);
+            } else {
+                // Append the string to the array
+                $curl_Header[] = 'Content-Type: application/' . $api->contentType;
+                $curl_Header[] = $auth['value'];
+            }
 
             // Build proper headers
             $curlHeaders = [
