@@ -31,3 +31,9 @@
 
 -Resolve issue when duplicating API it wasn't creating a new Feed.
 -Changed Feed Me Feed naming to use the Plugin Name as set in General Settings as the suffix.
+
+## 6.2 - 2026-06-17
+
+-Add orders entry type
+-Add post API Feed Import Handler
+-Add oAuth 2
