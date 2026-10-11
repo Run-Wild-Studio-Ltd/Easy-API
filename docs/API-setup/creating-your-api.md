@@ -31,6 +31,10 @@ Select the element type when fetching data from an API related to another entity
 
 Choose the field used from the parent element to determine the API URL for subsequent feed imports where a feed is reliant on unique identifiers contained in the parent element. This field corresponds to the dynamic Twig element in the example URL above.
 
+<div class="alert alert-primary">
+  Parent-based APIs make one API request per parent element, so large parent sets produce long-running imports. OAuth/OAuth2 access tokens are cached and reused for their lifetime rather than re-requested per parent, responses are merged once after the loop completes, and any individual parent request that fails is logged and skipped rather than aborting the run. For large parent sets, prefer running via the queue or console commands rather than waiting on a browser request.
+</div>
+
 ### Content Type
 
 Set the Content Type to match the data type being imported. Your options are:

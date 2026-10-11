@@ -37,3 +37,11 @@
 -Add orders entry type
 -Add post API Feed Import Handler
 -Add oAuth 2
+-Cache OAuth/OAuth2 access tokens for their lifetime instead of requesting one per API call; credentials are no longer written to logs
+-Add bounded cURL connect/transfer timeouts and surface cURL errors instead of "HTTP 0"
+-Merge parent element API responses once after the loop instead of per-iteration; failed parent requests are now logged and skipped
+-Queue API runs via a detached `queue/run` process so clicking Run API no longer waits on the import (requires a PHP CLI binary and `exec`/`popen`)
+-Prevent Feed Me's job description from eagerly fetching the entire feed during `Queue::push()`
+-Default Feed Me import jobs to a queue TTR of 14400 seconds (overridable via `config/feed-me.php`)
+-Sample the first 5 parent elements on Feed Me setup screens instead of running the full parent loop
+-Add `easyapi/apis/run-direct` console command to run an API directly in the console
