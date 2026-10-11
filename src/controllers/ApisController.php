@@ -8,11 +8,8 @@ use craft\errors\MissingComponentException;
 use craft\feedme\models\FeedModel;
 use craft\feedme\Plugin as FeedMePlugin;
 use craft\feedme\services\Feeds as FeedService;
-use craft\feedme\queue\jobs\FeedImport;
 use runwildstudio\easyapi\models\ApiModel;
 use runwildstudio\easyapi\EasyApi;
-use runwildstudio\easyapi\queue\jobs\ApiImport;
-use runwildstudio\easyapi\services\EasyApiDataTypes;
 use craft\helpers\Json;
 use craft\helpers\StringHelper;
 use craft\web\Controller;
@@ -283,14 +280,19 @@ class ApisController extends Controller
             $feed = $feedService->getFeedById($api->feedId);
 
             if ($this->_shouldRunFeedImport($api, $feed)) {
-                EasyApi::getInstance()->module->queue->push(new FeedImport([
-                    'feed' => $feed,
-                    'limit' => null,
-                    'offset' => null,
-                    'processedElementIds' => $processedElementIds
-                ]));
+                // pushFeedImport() pre-seeds the job's batch data so Queue::push()
+                // doesn't run the whole feed fetch inside this request
+                if (EasyApi::getInstance()->pushFeedImport($feed, $processedElementIds)) {
+                    // Drain the queue in a detached CLI process so the run doesn't
+                    // hold this request (and page) open
+                    $this->_spawnBackgroundProcess('queue/run');
+                }
             } else {
-                $this->_handleApiDirectImport($api, $api->apiUrl);
+                $this->_spawnBackgroundProcess(sprintf(
+                    'easyapi/apis/run-direct %s --url=%s',
+                    escapeshellarg((string)$api->id),
+                    escapeshellarg((string)$api->apiUrl)
+                ));
             }
         }
 
@@ -308,14 +310,15 @@ class ApisController extends Controller
                 
             if ($proceed) {
                 if ($this->_shouldRunFeedImport($api, $feed)) {
-                    EasyApi::getInstance()->module->queue->push(new FeedImport([
-                        'feed' => $feed,
-                        'limit' => null,
-                        'offset' => null,
-                        'processedElementIds' => $processedElementIds
-                    ]));
+                    if (EasyApi::getInstance()->pushFeedImport($feed, $processedElementIds)) {
+                        $this->_spawnBackgroundProcess('queue/run');
+                    }
                 } else {
-                    $this->_handleApiDirectImport($api, $api->apiUrl);
+                    $this->_spawnBackgroundProcess(sprintf(
+                        'easyapi/apis/run-direct %s --url=%s',
+                        escapeshellarg((string)$api->id),
+                        escapeshellarg((string)$api->apiUrl)
+                    ));
                 }
             }
 
@@ -325,9 +328,68 @@ class ApisController extends Controller
         return null;
     }
 
-    private function _shouldRunFeedImport($api, FeedModel $feed): bool
+    /**
+     * Spawn a detached CLI process so long-running work doesn't block the web request.
+     */
+    private function _spawnBackgroundProcess(string $commandArgs): void
+    {
+        try {
+            // @root is the project root - @app resolves to Craft's own src dir
+            $command = sprintf(
+                '%s %s %s',
+                escapeshellarg($this->_phpCliBinary()),
+                escapeshellarg(Craft::getAlias('@root/craft')),
+                $commandArgs
+            );
+
+            if (strncasecmp(PHP_OS, 'WIN', 3) === 0) {
+                pclose(popen('start /B "" ' . $command, 'r'));
+            } else {
+                exec($command . ' > /dev/null 2>&1 &');
+            }
+
+            Craft::info('EasyApi: spawned background process: ' . $command, __METHOD__);
+        } catch (\Throwable $e) {
+            Craft::warning('EasyApi: unable to spawn background process: ' . $e->getMessage(), __METHOD__);
+        }
+    }
+
+    /**
+     * Best-effort resolution of a PHP CLI binary - under php-cgi/php-fpm,
+     * PHP_BINARY can't run console commands.
+     */
+    private function _phpCliBinary(): string
+    {
+        $binary = PHP_BINARY ?: 'php';
+        $base = basename($binary);
+
+        if (str_contains($base, 'cgi') || str_contains($base, 'fpm')) {
+            $bindir = PHP_BINDIR . DIRECTORY_SEPARATOR . 'php';
+            if (is_executable($bindir)) {
+                return $bindir;
+            }
+
+            $cli = preg_replace('/php-.+$/', 'php', $binary);
+            if ($cli && is_executable($cli)) {
+                return $cli;
+            }
+
+            return 'php';
+        }
+
+        return $binary;
+    }
+
+    private function _shouldRunFeedImport($api, ?FeedModel $feed): bool
     {
         if (!$feed || !$feed->getElement()) {
+            return false;
+        }
+
+        // Apis that do all their work in a postImportHandler have no feed field
+        // mapping - a FeedImport job would just fail with "Field mapping not
+        // setup." after fetching, so they take the direct path instead
+        if (empty($feed->fieldMapping)) {
             return false;
         }
 
@@ -336,26 +398,6 @@ class ApisController extends Controller
             if ($parentElement === null) {
                 return false;
             }
-        }
-
-        return true;
-    }
-
-    private function _handleApiDirectImport($api, ?string $apiUrl = null): bool
-    {
-        $effectiveUrl = $apiUrl ?: $api->apiUrl;
-        $responseData = EasyApiDataTypes::getRawData($effectiveUrl, $api->id);
-
-        if (!empty($api->postImportHandler)) {
-            [$moduleKey, $method] = explode('.', $api->postImportHandler);
-            $module = Craft::$app->getModule($moduleKey);
-            if ($module && method_exists($module, $method)) {
-                $module->$method($responseData['data'] ?? null, $effectiveUrl, $api->id);
-            } else {
-                Craft::warning("EasyApi: Handler not callable: {$api->postImportHandler}", __METHOD__);
-            }
-        } else {
-            Craft::warning("EasyApi: No postImportHandler configured for unsupported feed import", __METHOD__);
         }
 
         return true;

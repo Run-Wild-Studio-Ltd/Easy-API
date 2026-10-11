@@ -12,6 +12,24 @@ class oauth2 extends AuthType
     public static string $name = 'OAuth2';
 
     /**
+     * In-request token cache keyed by api/credentials hash
+     */
+    private static array $_tokens = [];
+
+    /**
+     * @return string Cache key for the api's token
+     */
+    private function _cacheKey($api): string
+    {
+        return 'easyapi-oauth2-' . ($api->id ?? 0) . '-' . md5(
+            ($api->authorizationUrl ?? '') .
+            ($api->authorizationAppId ?? '') .
+            ($api->authorizationAppSecret ?? '') .
+            ($api->authorizationScope ?? '')
+        );
+    }
+
+    /**
      * Perform OAuth2 token request
      */
     private function requestToken($api): array
@@ -60,7 +78,6 @@ class oauth2 extends AuthType
             }
 
             Craft::info('OAuth2 token request URL: ' . $api->authorizationUrl, __METHOD__);
-            Craft::info('OAuth2 token request POST data: ' . print_r($postData, true), __METHOD__);
 
             curl_setopt_array($curl, [
                 CURLOPT_URL            => $api->authorizationUrl,
@@ -81,8 +98,7 @@ class oauth2 extends AuthType
             $httpInfo = curl_getinfo($curl);
             curl_close($curl);
 
-            Craft::info('OAuth2 cURL HTTP info: ' . print_r($httpInfo, true), __METHOD__);
-            Craft::info('OAuth2 raw token response: ' . $responseRaw, __METHOD__);
+            Craft::info('OAuth2 token request HTTP code: ' . ($httpInfo['http_code'] ?? 'unknown'), __METHOD__);
 
             $json = json_decode($responseRaw, true);
 
@@ -91,7 +107,8 @@ class oauth2 extends AuthType
             }
 
             if (!isset($json['access_token'])) {
-                throw new Exception("OAuth2 token response missing access_token: " . $responseRaw);
+                $errorDesc = $json['error_description'] ?? $json['error'] ?? 'no access_token in response';
+                throw new Exception("OAuth2 token request failed: " . $errorDesc);
             }
 
             if (isset($json['refresh_token'])) {
@@ -104,7 +121,7 @@ class oauth2 extends AuthType
             return [
                 'success' => true,
                 'access_token' => $json['access_token'],
-                'raw' => $json
+                'expires_in' => $json['expires_in'] ?? null,
             ];
 
         } catch (Exception $e) {
@@ -122,7 +139,20 @@ class oauth2 extends AuthType
      */
     public function getAuthValue($api): array
     {
-        Craft::info('OAuth2 getAuthValue START', __METHOD__);
+        $cacheKey = $this->_cacheKey($api);
+
+        // In-request cache first, then persistent cache
+        if (isset(self::$_tokens[$cacheKey])) {
+            return ['success' => true, 'value' => 'Bearer ' . self::$_tokens[$cacheKey]];
+        }
+
+        $cached = Craft::$app->getCache()->get($cacheKey);
+        if (is_string($cached) && $cached !== '') {
+            self::$_tokens[$cacheKey] = $cached;
+            return ['success' => true, 'value' => 'Bearer ' . $cached];
+        }
+
+        Craft::info('OAuth2 getAuthValue: requesting new token', __METHOD__);
 
         $token = $this->requestToken($api);
 
@@ -134,7 +164,11 @@ class oauth2 extends AuthType
             ];
         }
 
-        Craft::info('OAuth2 Authorization header: Bearer ' . $token['access_token'], __METHOD__);
+        // Cache for the token's lifetime, minus a 60s safety buffer
+        $ttl = $token['expires_in'] ? max(60, (int)$token['expires_in'] - 60) : 3540;
+        self::$_tokens[$cacheKey] = $token['access_token'];
+        Craft::$app->getCache()->set($cacheKey, $token['access_token'], $ttl);
+
         Craft::info('OAuth2 getAuthValue END - SUCCESS', __METHOD__);
 
         return [

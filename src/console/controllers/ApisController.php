@@ -2,10 +2,11 @@
 
 namespace runwildstudio\easyapi\console\controllers;
 
-use craft\feedme\models\FeedModel;
+use Craft;
+use craft\feedme\Plugin as FeedMePlugin;
 use craft\feedme\services\Feeds as FeedService;
-use craft\feedme\queue\jobs\FeedImport;
 use runwildstudio\easyapi\EasyApi;
+use runwildstudio\easyapi\services\EasyApiDataTypes;
 use craft\helpers\Console;
 use yii\console\Controller;
 use yii\console\ExitCode;
@@ -39,6 +40,11 @@ class ApisController extends Controller
      */
     public bool $all = false;
 
+    /**
+     * @var string|null A URL to use instead of the api's stored URL.
+     */
+    public ?string $url = null;
+
     // Public Methods
     // =========================================================================
 
@@ -52,6 +58,7 @@ class ApisController extends Controller
         $options[] = 'offset';
         $options[] = 'continueOnError';
         $options[] = 'all';
+        $options[] = 'url';
         return $options;
     }
 
@@ -61,7 +68,7 @@ class ApisController extends Controller
      * @param string|null $apiId A comma-separated list of api IDs to process
      * @return int
      */
-    public function actionQueue(string $apiId = null): int
+    public function actionQueue(?string $apiId = null): int
     {
         $apis = EasyApi::getInstance()->getApis();
         $tally = 0;
@@ -97,6 +104,66 @@ class ApisController extends Controller
     }
 
     /**
+     * Runs a direct (non-Feed-Me) api import in the current process.
+     * Intended to be spawned in the background by web requests so the
+     * import doesn't block the page.
+     *
+     * @param string|null $apiId The api ID to process
+     * @return int
+     */
+    public function actionRunDirect(?string $apiId = null): int
+    {
+        $api = EasyApi::getInstance()->getApis()->getApiById($apiId);
+
+        if (!$api) {
+            $this->stderr("Invalid api ID: $apiId" . PHP_EOL, Console::FG_RED);
+            return ExitCode::DATAERR;
+        }
+
+        $url = $this->url ?: $api->apiUrl;
+
+        // If the api is backed by a Feed Me feed, run the fetch through Feed Me so
+        // the EVENT_BEFORE_FETCH_FEED handler applies the full EasyApi pipeline
+        // (parent-element loop, per-parent postImportHandler, pagination).
+        if ($api->feedId && FeedMePlugin::$plugin !== null) {
+            $feed = (new FeedService())->getFeedById($api->feedId);
+
+            if ($feed) {
+                if ($this->url) {
+                    $feed->feedUrl = $url;
+                }
+
+                $response = FeedMePlugin::$plugin->data->getFeedData($feed);
+
+                if (empty($response['success'])) {
+                    $this->stderr('Feed fetch failed: ' . ($response['error'] ?? 'unknown error') . PHP_EOL, Console::FG_RED);
+                    return ExitCode::UNAVAILABLE;
+                }
+
+                $this->stdout('Import complete.' . PHP_EOL, Console::FG_GREEN);
+                return ExitCode::OK;
+            }
+        }
+
+        // No feed - fetch the raw URL and run the post-import handler directly
+        $responseData = EasyApiDataTypes::getRawData($url, $api->id);
+
+        if (!empty($api->postImportHandler)) {
+            [$moduleKey, $method] = explode('.', $api->postImportHandler);
+            $module = Craft::$app->getModule($moduleKey);
+            if ($module && method_exists($module, $method)) {
+                $module->$method($responseData['data'] ?? null, $url, $api->id);
+            } else {
+                $this->stderr("Handler not callable: {$api->postImportHandler}" . PHP_EOL, Console::FG_RED);
+            }
+        } else {
+            $this->stdout('No postImportHandler configured; data fetched only.' . PHP_EOL, Console::FG_YELLOW);
+        }
+
+        return ExitCode::OK;
+    }
+
+    /**
      * Push an api to the queue to be processed.
      *
      * @param      $api
@@ -112,13 +179,10 @@ class ApisController extends Controller
 
         $feedService = new FeedService();
         $feed = $feedService->getFeedById($api->feedId);
-        
-        EasyApi::getInstance()->module->queue->push(new FeedImport([
-            'feed' => $feed,
-            'limit' => null,
-            'offset' => null,
-            'continueOnError' => $continueOnError
-        ]));
+
+        // pushFeedImport() pre-seeds the job's batch data so Queue::push() doesn't
+        // run the whole feed fetch just to build the job description
+        EasyApi::getInstance()->pushFeedImport($feed, null, $continueOnError);
 
         $this->stdout('done' . PHP_EOL, Console::FG_GREEN);
     }
