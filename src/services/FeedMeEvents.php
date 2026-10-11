@@ -14,6 +14,7 @@ use craft\elements\Tag;
 use craft\elements\GlobalSet;
 use craft\feedme\events\FeedDataEvent;
 use craft\feedme\Plugin as FeedMePlugin;
+use craft\helpers\App;
 use runwildstudio\easyapi\EasyApi;
 use runwildstudio\easyapi\helpers\DataHelper;
 use runwildstudio\easyapi\services\EasyApiDataTypes;
@@ -246,6 +247,18 @@ class FeedMeEvents extends Component
                     return;
                 }
 
+                // Feed Me's setup wizard (primary element + mapping steps) fetches
+                // the feed only to enumerate data structure - a small sample of
+                // parents is representative, so don't loop the whole parent set
+                // inside those CP requests.
+                if ($this->_isFeedMeSetupRequest() && count($parents) > 5) {
+                    Craft::info(
+                        "EasyApi: Feed Me setup request - sampling first 5 parents only (" . count($parents) . " available).",
+                        __METHOD__
+                    );
+                    $parents = array_slice($parents, 0, 5);
+                }
+
                 Craft::info(
                     "EasyApi: Parent fetch. type={$api->parentElementType}, parents=" . count($parents),
                     __METHOD__
@@ -258,6 +271,11 @@ class FeedMeEvents extends Component
                 if (!$field) {
                     Craft::warning("EasyApi: parentElementIdField '{$handle}' not found as a Craft field.", __METHOD__);
                 }
+
+                // Parent mode can fire thousands of sequential requests - lift PHP limits
+                App::maxPowerCaptain();
+
+                $mergedData = [];
 
                 foreach ($parents as $parent) {
                     try {
@@ -295,13 +313,26 @@ class FeedMeEvents extends Component
                         continue;
                     }
 
-                    if ($responseData) {
-                        $array1 = json_decode($responseData['data'], true) ?? [];
-                        $array2 = json_decode($apiData['data'], true) ?? [];
-                        $responseData['data'] = json_encode(array_merge_recursive($array1, $array2));
+                    $responseData = $responseData ?? $apiData;
+
+                    if (!empty($apiData['success'])) {
+                        $decoded = json_decode($apiData['data'] ?? '', true);
+                        if (is_array($decoded)) {
+                            $mergedData[] = $decoded;
+                        }
                     } else {
-                        $responseData = $apiData;
+                        Craft::warning(
+                            "EasyApi: parent request failed for {$api->parentElementIdField}=" . $dynamicValue . " ({$modifiedUrl}): " . ($apiData['error'] ?? 'unknown error'),
+                            __METHOD__
+                        );
                     }
+                }
+
+                // Merge all parent responses once, rather than re-decoding/re-encoding the
+                // accumulated payload on every iteration (O(n^2) with many parents)
+                if (!empty($mergedData)) {
+                    $responseData['success'] = true;
+                    $responseData['data'] = json_encode(array_merge_recursive(...$mergedData));
                 }
 
                 $apiUrl = $originalUrl;
@@ -382,6 +413,22 @@ class FeedMeEvents extends Component
         }
 
         return FeedMePlugin::$plugin->elements->getRegisteredElement($elementType) !== null;
+    }
+
+    private function _isFeedMeSetupRequest(): bool
+    {
+        $request = Craft::$app->getRequest();
+
+        if ($request->getIsConsoleRequest() || !$request->getIsCpRequest()) {
+            return false;
+        }
+
+        $action = Craft::$app->requestedAction;
+
+        return $action !== null && in_array($action->uniqueId, [
+            'feed-me/feeds/element-feed',
+            'feed-me/feeds/map-feed',
+        ], true);
     }
 
 }

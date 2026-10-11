@@ -128,7 +128,7 @@ class EasyApiDataTypes extends Component
 
         // Get auth headers
         $auth = $api->getAuthType()->getAuthValue($api);
-        Craft::info('Raw auth response: ' . print_r($auth, true), __METHOD__);
+        Craft::info('Raw auth response success=' . var_export($auth['success'] ?? false, true), __METHOD__);
 
         if (!$auth['success']) {
             $response = ['success' => false, 'error' => $auth['error']];
@@ -138,16 +138,6 @@ class EasyApiDataTypes extends Component
 
         try {
             $curl = curl_init();
-            $curl_Header = [];
-            if (is_array($auth['value'])) {
-                // Merge the associative array with the existing array
-                $curl_Header['Content-Type'] = 'application/' . $api->contentType;
-                $curl_Header = array_merge($curl_Header, $auth['value']);
-            } else {
-                // Append the string to the array
-                $curl_Header[] = 'Content-Type: application/' . $api->contentType;
-                $curl_Header[] = $auth['value'];
-            }
 
             // Build proper headers
             $curlHeaders = [
@@ -156,9 +146,12 @@ class EasyApiDataTypes extends Component
                 'Authorization: ' . $auth['value'],  // ensure "Authorization: Bearer ..."
             ];
 
-            // Log the full curl command for debugging
+            // Log the curl command for debugging, with credentials redacted
             $curlCommand = 'curl -X GET \'' . $url . '\'';
             foreach ($curlHeaders as $h) {
+                if (stripos($h, 'Authorization:') === 0) {
+                    $h = 'Authorization: [redacted]';
+                }
                 $curlCommand .= ' -H \'' . $h . '\'';
             }
             Craft::info('Executing cURL: ' . $curlCommand, __METHOD__);
@@ -168,13 +161,16 @@ class EasyApiDataTypes extends Component
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_ENCODING => '',
                 CURLOPT_MAXREDIRS => 10,
-                CURLOPT_TIMEOUT => 0,
+                CURLOPT_CONNECTTIMEOUT => 15,
+                CURLOPT_TIMEOUT => 120,
                 CURLOPT_FOLLOWLOCATION => true,
                 CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
                 CURLOPT_HTTPHEADER => $curlHeaders,
             ]);
 
             $data = curl_exec($curl);
+            $curlErrno = curl_errno($curl);
+            $curlError = curl_error($curl);
             $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
             curl_close($curl);
 
@@ -182,8 +178,12 @@ class EasyApiDataTypes extends Component
             //Craft::info('Raw API response: ' . $data, __METHOD__);
             //Craft::info('Raw API HTTP code: ' . $httpCode, __METHOD__);
 
-            if ($httpCode >= 400) {
+            if ($curlErrno || $data === false) {
+                $response = ['success' => false, 'error' => "cURL error {$curlErrno}: {$curlError}"];
+                Craft::warning('EasyApi request failed: ' . $response['error'] . ' URL: ' . $url, __METHOD__);
+            } elseif ($httpCode >= 400) {
                 $response = ['success' => false, 'error' => "HTTP $httpCode"];
+                Craft::warning("EasyApi request returned HTTP {$httpCode} URL: {$url}", __METHOD__);
             } else {
                 $response = ['success' => true, 'data' => $data];
             }

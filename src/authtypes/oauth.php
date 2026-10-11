@@ -18,6 +18,24 @@ class oauth extends AuthType
      */
     public static string $name = 'OAuth';
 
+    /**
+     * In-request token cache keyed by api/credentials hash
+     */
+    private static array $_tokens = [];
+
+    /**
+     * @return string Cache key for the api's token
+     */
+    private function _cacheKey($api): string
+    {
+        return 'easyapi-oauth-' . ($api->id ?? 0) . '-' . md5(
+            ($api->authorizationUrl ?? '') .
+            ($api->authorizationAppId ?? '') .
+            ($api->authorizationAppSecret ?? '') .
+            ($api->authorizationScope ?? '')
+        );
+    }
+
     private function getAuthToken($api): array
     {
         try {
@@ -77,7 +95,7 @@ class oauth extends AuthType
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_POST => 1,
                 CURLOPT_POSTFIELDS => $postData,
-                CURLOPT_TIMEOUT => 0,
+                CURLOPT_TIMEOUT => 30,
                 CURLOPT_CUSTOMREQUEST => 'POST'
             ));
 
@@ -106,8 +124,23 @@ class oauth extends AuthType
      */
     public function getAuthValue($api): array
     {
+        $cacheKey = $this->_cacheKey($api);
+
+        // In-request cache first, then persistent cache
+        if (isset(self::$_tokens[$cacheKey])) {
+            return ['success' => true, 'value' => 'oauth-token: ' . self::$_tokens[$cacheKey]];
+        }
+
+        $cached = Craft::$app->getCache()->get($cacheKey);
+        if (is_string($cached) && $cached !== '') {
+            self::$_tokens[$cacheKey] = $cached;
+            return ['success' => true, 'value' => 'oauth-token: ' . $cached];
+        }
+
         $token = $this->getAuthToken($api);
         if ($token['success']) {
+            self::$_tokens[$cacheKey] = $token['value'];
+            Craft::$app->getCache()->set($cacheKey, $token['value'], 3540);
             return ['success' => true, 'value' => 'oauth-token: ' . $token['value']];
         } else {
             return ['success' => false, 'error' => $token['error']];

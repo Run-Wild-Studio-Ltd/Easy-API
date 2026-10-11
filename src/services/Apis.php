@@ -33,6 +33,11 @@ class Apis extends Component
      */
     private array $_overrides = [];
 
+    /**
+     * @var array<int|string, ApiModel|null> Per-request cache of api models by id
+     */
+    private array $_apiModels = [];
+
     // Constants
     // =========================================================================
 
@@ -78,11 +83,15 @@ class Apis extends Component
      */
     public function getApiById($apiId): ?ApiModel
     {
-        $result = $this->_getQuery()
-            ->where(['id' => $apiId])
-            ->one();
+        if (!array_key_exists($apiId, $this->_apiModels)) {
+            $result = $this->_getQuery()
+                ->where(['id' => $apiId])
+                ->one();
 
-        return $this->_createModelFromRecord($result);
+            $this->_apiModels[$apiId] = $this->_createModelFromRecord($result);
+        }
+
+        return $this->_apiModels[$apiId];
     }
 
     /**

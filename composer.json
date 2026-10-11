@@ -2,7 +2,7 @@
   "name": "runwildstudio/easyapi",
   "description": "Import content from APIs into entries, categories, Craft Commerce products, and more.",
   "type": "craft-plugin",
-  "version": "6.1.4",
+  "version": "6.2",
   "keywords": [
     "craft",
     "cms",
