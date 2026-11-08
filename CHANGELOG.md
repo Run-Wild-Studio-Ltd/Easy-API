@@ -1,5 +1,10 @@
 # Release Notes for Easy API
 
+
+## 6.2.1 - 2026-11-09
+
+-Added missing migration for the postImportHandler column (fixes index page crash on installs upgraded from older versions).
+
 ## 4.4.3 - 2024-05-22
 
 -Resolved issue where Feed Me functions were not being called correctly.
