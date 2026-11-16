@@ -139,18 +139,21 @@ class EasyApiDataTypes extends Component
         try {
             $curl = curl_init();
 
-            // Build proper headers
+            // Build proper headers — auth types return full header lines
+            // (e.g. "X-Api-Key: abc" or "Authorization: Bearer ..."), so merge
+            // them rather than assuming a single Authorization header.
+            $authHeaders = (array)$auth['value'];
             $curlHeaders = [
                 'Content-Type: application/' . $api->contentType,
                 'Accept: application/json',
-                'Authorization: ' . $auth['value'],  // ensure "Authorization: Bearer ..."
+                ...$authHeaders,
             ];
 
             // Log the curl command for debugging, with credentials redacted
             $curlCommand = 'curl -X GET \'' . $url . '\'';
             foreach ($curlHeaders as $h) {
-                if (stripos($h, 'Authorization:') === 0) {
-                    $h = 'Authorization: [redacted]';
+                if (in_array($h, $authHeaders, true)) {
+                    $h = preg_replace('/:.*/', ': [redacted]', $h);
                 }
                 $curlCommand .= ' -H \'' . $h . '\'';
             }

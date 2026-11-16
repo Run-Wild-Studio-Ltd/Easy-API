@@ -371,7 +371,7 @@ class FeedMeEvents extends Component
             } else {
                 $responseData = [
                     'success' => false,
-                    'error' => $responseData['data'] ?? 'Unknown error',
+                    'error' => $responseData['error'] ?? 'Unknown error',
                     'data' => null,
                 ];
             }

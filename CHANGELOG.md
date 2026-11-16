@@ -1,6 +1,14 @@
 # Release Notes for Easy API
 
 
+## 6.2.2 - 2026-11-16
+
+-Fixed auth headers never being sent on feed/API requests: `getAuthValue()` returns an array of header lines, but `getRawData()` concatenated it into a single `Authorization:` header — requests went out as `Authorization: Array` and every authenticated call failed with 401.
+
+-All auth-derived headers are now redacted in the logged cURL command (not just `Authorization:`), so custom-parameter keys (e.g. `X-Api-Key`) don't leak into logs.
+
+-Fixed fetch errors surfacing as `Unknown error` in Feed Me — the real error (`HTTP 401`, cURL failure, etc.) is now reported.
+
 ## 6.2.1 - 2026-11-09
 
 -Added missing migration for the postImportHandler column (fixes index page crash on installs upgraded from older versions).
