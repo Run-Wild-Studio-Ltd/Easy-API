@@ -8,6 +8,7 @@ use craft\events\RegisterUrlRulesEvent;
 use craft\feedme\datatypes\DataBatcher;
 use craft\feedme\events\FeedDataEvent;
 use craft\feedme\events\FeedEvent;
+use craft\feedme\events\FeedProcessEvent;
 use craft\feedme\models\FeedModel;
 use craft\feedme\Plugin as FeedMePlugin;
 use craft\feedme\queue\jobs\FeedImport;
@@ -225,6 +226,20 @@ class EasyApi extends \craft\base\Plugin
         Event::on(DataTypes::class, DataTypes::EVENT_BEFORE_FETCH_FEED, function(FeedDataEvent $event) {
             // This will set the feed's data
             $this->feedme->getDataForFeedMe($event);
+        });
+
+        // Throttle element processing - sleep after each element save so
+        // heavy imports (e.g. feeds uploading many images/assets) don't
+        // spike server resources. sleepTime is global, overridable per-api
+        // via apiOptions.<apiId>.sleepTime.
+        Event::on(FeedMeProcess::class, FeedMeProcess::EVENT_STEP_AFTER_ELEMENT_SAVE, function(FeedProcessEvent $event) {
+            $feedId = $event->feed->id ?? null;
+            $api = $feedId ? $this->apis->getApiByFeedId($feedId) : null;
+            $sleep = $this->service->getConfig('sleepTime', $api->id ?? null);
+
+            if ($sleep) {
+                sleep((int)$sleep);
+            }
         });
     }
 

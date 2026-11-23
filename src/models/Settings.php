@@ -35,6 +35,14 @@ class Settings extends Model
     public ?int $queueMaxRetry = null;
 
     /**
+     * Seconds to sleep after each feed element is processed. Throttles
+     * imports (e.g. feeds that upload many images/assets) so they don't
+     * spike server resources.
+     * @var int
+     */
+    public int $sleepTime = 0;
+
+    /**
      * Whether CP "Run" actions should spawn a detached queue drain process.
      * Disable on environments with a dedicated queue listener (e.g. Docker)
      * so feed imports are only ever processed by that single worker.

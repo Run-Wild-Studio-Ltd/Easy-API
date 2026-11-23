@@ -1,6 +1,10 @@
 # Release Notes for Easy API
 
 
+## 6.2.5 - 2026-11-23
+
+-Added a `sleepTime` setting (CP → Easy API → Settings, or `config/easyapi.php`): seconds to sleep after each feed element is processed, throttling imports that upload many images/assets so they don't spike server resources. Overridable per API via `apiOptions.<apiId>.sleepTime`. Implemented by listening to Feed Me's `EVENT_STEP_AFTER_ELEMENT_SAVE`, so it only affects Easy API-backed feeds.
+
 ## 6.2.4 - 2026-11-23
 
 -Prevented concurrent queue drains from CP "Run" actions: each run previously spawned a detached `queue/run` process that drains the entire queue, so repeated runs (or rapid clicks) created parallel workers executing heavy feed imports simultaneously and could exhaust the server. Spawns now go through `easyapi/apis/run-queue`, which holds a non-blocking file lock — extra spawns exit immediately while the active runner keeps draining.

@@ -36,6 +36,15 @@
         instructions: 'Cache duration (in seconds) to cache requests. Note: this only affects calls using the template tag - requests are never cached when triggering directly via the CP.'|t('easyapi'),
     }) }}
 
+    {{ forms.numberField({
+        id: 'sleepTime',
+        name: 'sleepTime',
+        label: 'Sleep Time'|t('easyapi'),
+        value: settings.sleepTime,
+        min: 0,
+        instructions: 'Seconds to sleep after each feed element is processed. Throttles imports that upload many images or assets.'|t('easyapi'),
+    }) }}
+
     <hr>
 
     <a class="btn" href="{{ actionUrl('easyapi/base/start-job-queue') }}">
