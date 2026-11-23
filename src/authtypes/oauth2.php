@@ -143,13 +143,13 @@ class oauth2 extends AuthType
 
         // In-request cache first, then persistent cache
         if (isset(self::$_tokens[$cacheKey])) {
-            return ['success' => true, 'value' => 'Bearer ' . self::$_tokens[$cacheKey]];
+            return ['success' => true, 'value' => ['Authorization: Bearer ' . self::$_tokens[$cacheKey]]];
         }
 
         $cached = Craft::$app->getCache()->get($cacheKey);
         if (is_string($cached) && $cached !== '') {
             self::$_tokens[$cacheKey] = $cached;
-            return ['success' => true, 'value' => 'Bearer ' . $cached];
+            return ['success' => true, 'value' => ['Authorization: Bearer ' . $cached]];
         }
 
         Craft::info('OAuth2 getAuthValue: requesting new token', __METHOD__);
@@ -173,7 +173,7 @@ class oauth2 extends AuthType
 
         return [
             'success' => true,
-            'value' => 'Bearer ' . $token['access_token']
+            'value' => ['Authorization: Bearer ' . $token['access_token']]
         ];
     }
 
