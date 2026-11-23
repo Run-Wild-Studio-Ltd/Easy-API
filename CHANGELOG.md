@@ -1,6 +1,10 @@
 # Release Notes for Easy API
 
 
+## 6.2.6 - 2026-11-23
+
+-Added an optional daily run time for the job queue (`jobQueueTime`, HH:MM 24h — CP → Easy API → Settings or `config/easyapi.php`). When set, APIs run once per day at/after that time instead of every `jobQueueInterval` minutes. Includes catch-up behaviour: if the queue worker was down at the scheduled time, feeds still run once it comes back. Interval scheduling is unchanged when unset.
+
 ## 6.2.5 - 2026-11-23
 
 -Added a `sleepTime` setting (CP → Easy API → Settings, or `config/easyapi.php`): seconds to sleep after each feed element is processed, throttling imports that upload many images/assets so they don't spike server resources. Overridable per API via `apiOptions.<apiId>.sleepTime`. Implemented by listening to Feed Me's `EVENT_STEP_AFTER_ELEMENT_SAVE`, so it only affects Easy API-backed feeds.

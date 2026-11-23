@@ -20,6 +20,14 @@ class Settings extends Model
     public int $jobQueueInterval = 60;
 
     /**
+     * Optional daily run time (HH:MM, 24h). When set, the job queue only
+     * processes APIs at/after this time each day, instead of every
+     * jobQueueInterval minutes.
+     * @var string|null
+     */
+    public ?string $jobQueueTime = null;
+
+    /**
      * @var int
      */
     public int $cache = 60;

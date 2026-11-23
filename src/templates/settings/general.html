@@ -29,6 +29,15 @@
     }) }}
 
     {{ forms.textField({
+        id: 'jobQueueTime',
+        name: 'jobQueueTime',
+        label: 'Job Queue Time'|t('easyapi'),
+        value: settings.jobQueueTime,
+        placeholder: 'e.g. 02:00',
+        instructions: 'Optional daily run time (HH:MM, 24 hour). When set, APIs only run at/after this time each day instead of every interval.'|t('easyapi'),
+    }) }}
+
+    {{ forms.textField({
         id: 'cache',
         name: 'cache',
         label: 'Cache Duration'|t('easyapi'),
