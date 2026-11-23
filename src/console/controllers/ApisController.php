@@ -164,6 +164,35 @@ class ApisController extends Controller
     }
 
     /**
+     * Drain the queue under a non-blocking file lock, so concurrent "Run API"
+     * requests can't spawn parallel queue drains and exhaust the server.
+     * If another runner holds the lock this exits immediately — the active
+     * runner keeps draining, and jobs pushed meanwhile are picked up by it
+     * (or by the dedicated queue listener).
+     *
+     * @return int
+     */
+    public function actionRunQueue(): int
+    {
+        $lockFile = Craft::getRuntimePath() . 'easyapi-queue.lock';
+        $fp = fopen($lockFile, 'c');
+
+        if ($fp === false || !flock($fp, LOCK_EX | LOCK_NB)) {
+            $this->stdout('EasyApi: a queue runner is already active — skipping.' . PHP_EOL);
+            return ExitCode::OK;
+        }
+
+        try {
+            Craft::$app->getQueue()->run();
+        } finally {
+            flock($fp, LOCK_UN);
+            fclose($fp);
+        }
+
+        return ExitCode::OK;
+    }
+
+    /**
      * Push an api to the queue to be processed.
      *
      * @param      $api

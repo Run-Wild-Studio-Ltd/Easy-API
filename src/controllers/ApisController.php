@@ -285,7 +285,7 @@ class ApisController extends Controller
                 if (EasyApi::getInstance()->pushFeedImport($feed, $processedElementIds)) {
                     // Drain the queue in a detached CLI process so the run doesn't
                     // hold this request (and page) open
-                    $this->_spawnBackgroundProcess('queue/run');
+                    $this->_spawnQueueRunner();
                 }
             } else {
                 $this->_spawnBackgroundProcess(sprintf(
@@ -311,7 +311,7 @@ class ApisController extends Controller
             if ($proceed) {
                 if ($this->_shouldRunFeedImport($api, $feed)) {
                     if (EasyApi::getInstance()->pushFeedImport($feed, $processedElementIds)) {
-                        $this->_spawnBackgroundProcess('queue/run');
+                        $this->_spawnQueueRunner();
                     }
                 } else {
                     $this->_spawnBackgroundProcess(sprintf(
@@ -326,6 +326,20 @@ class ApisController extends Controller
         }
 
         return null;
+    }
+
+    /**
+     * Spawn the detached queue drain, unless disabled via config or already
+     * running (the run-queue command self-locks, so extra spawns no-op).
+     */
+    private function _spawnQueueRunner(): void
+    {
+        if (EasyApi::$plugin->getSettings()->spawnQueueRunner === false) {
+            Craft::info('EasyApi: queue runner spawn disabled — jobs left for the queue listener', __METHOD__);
+            return;
+        }
+
+        $this->_spawnBackgroundProcess('easyapi/apis/run-queue');
     }
 
     /**

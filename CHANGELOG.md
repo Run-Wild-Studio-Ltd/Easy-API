@@ -1,6 +1,12 @@
 # Release Notes for Easy API
 
 
+## 6.2.4 - 2026-11-23
+
+-Prevented concurrent queue drains from CP "Run" actions: each run previously spawned a detached `queue/run` process that drains the entire queue, so repeated runs (or rapid clicks) created parallel workers executing heavy feed imports simultaneously and could exhaust the server. Spawns now go through `easyapi/apis/run-queue`, which holds a non-blocking file lock — extra spawns exit immediately while the active runner keeps draining.
+
+-Added `spawnQueueRunner` config option (default `true`). Set to `false` on environments with a dedicated queue listener (e.g. Docker `queue/listen`) so only that single worker ever processes jobs.
+
 ## 6.2.3 - 2026-11-18
 
 -Fixed OAuth2 requests still failing with 401 after 6.2.2: `getAuthValue()` returned a bare `Bearer <token>` string, which was sent as a header line with no `Authorization:` name and dropped by cURL. It now returns a complete `Authorization: Bearer <token>` header line, matching the contract used by the basic/none auth types.

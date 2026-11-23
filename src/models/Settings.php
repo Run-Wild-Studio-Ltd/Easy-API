@@ -33,4 +33,12 @@ class Settings extends Model
      * @var int|null
      */
     public ?int $queueMaxRetry = null;
+
+    /**
+     * Whether CP "Run" actions should spawn a detached queue drain process.
+     * Disable on environments with a dedicated queue listener (e.g. Docker)
+     * so feed imports are only ever processed by that single worker.
+     * @var bool
+     */
+    public bool $spawnQueueRunner = true;
 }
