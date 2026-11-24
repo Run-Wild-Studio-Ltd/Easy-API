@@ -1,6 +1,10 @@
 # Release Notes for Easy API
 
 
+## 6.2.7 - 2026-11-24
+
+-Fixed a Twig error on the settings page: the `sleepTime` field used a `numberField` form macro that doesn't exist in Craft CMS. It now uses `textField` with `type: 'number'`, matching Craft core conventions.
+
 ## 6.2.6 - 2026-11-23
 
 -Added an optional daily run time for the job queue (`jobQueueTime`, HH:MM 24h — CP → Easy API → Settings or `config/easyapi.php`). When set, APIs run once per day at/after that time instead of every `jobQueueInterval` minutes. Includes catch-up behaviour: if the queue worker was down at the scheduled time, feeds still run once it comes back. Interval scheduling is unchanged when unset.
