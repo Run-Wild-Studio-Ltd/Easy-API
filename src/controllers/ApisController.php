@@ -377,21 +377,30 @@ class ApisController extends Controller
         $binary = PHP_BINARY ?: 'php';
         $base = basename($binary);
 
-        if (str_contains($base, 'cgi') || str_contains($base, 'fpm')) {
-            $bindir = PHP_BINDIR . DIRECTORY_SEPARATOR . 'php';
-            if (is_executable($bindir)) {
-                return $bindir;
-            }
+        // PHP_BINARY is only usable when it is a PHP CLI SAPI. Under mod_php
+        // it is the web server binary (apache2/httpd); under CGI/FPM it is the
+        // SAPI wrapper - none of which can run `craft` console commands.
+        $isCli = strpos($base, 'php') === 0
+            && strpos($base, 'cgi') === false
+            && strpos($base, 'fpm') === false;
 
-            $cli = preg_replace('/php-.+$/', 'php', $binary);
-            if ($cli && is_executable($cli)) {
-                return $cli;
-            }
-
-            return 'php';
+        if ($isCli) {
+            return $binary;
         }
 
-        return $binary;
+        // Prefer the php CLI installed alongside PHP_BINDIR
+        $cli = PHP_BINDIR . DIRECTORY_SEPARATOR . 'php';
+        if (is_executable($cli)) {
+            return $cli;
+        }
+
+        // e.g. php-cgi-8.2 -> php-8.2 in the same directory
+        $candidate = preg_replace('/-(cgi|fpm)/', '', $binary);
+        if ($candidate !== $binary && is_executable($candidate)) {
+            return $candidate;
+        }
+
+        return 'php';
     }
 
     private function _shouldRunFeedImport($api, ?FeedModel $feed): bool
