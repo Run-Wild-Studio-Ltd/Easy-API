@@ -305,6 +305,8 @@ class FeedMeEvents extends Component
                         $module = Craft::$app->getModule($moduleKey);
                         if ($module && method_exists($module, $method)) {
                             $module->$method($apiData['data'], $modifiedUrl, $api->id);
+                            // The handler owns the import - hand Feed Me empty data so no elements are created
+                            $apiData['data'] = json_encode(['value' => []]);
                         } else {
                             Craft::warning("EasyApi: Handler not callable: {$api->postImportHandler}", __METHOD__);
                         }
@@ -357,6 +359,8 @@ class FeedMeEvents extends Component
                     $module = Craft::$app->getModule($moduleKey);
                     if ($module && method_exists($module, $method)) {
                         $module->$method($responseData['data'], $apiUrl, $api->id);
+                        // The handler owns the import - hand Feed Me empty data so no elements are created
+                        $responseData['data'] = json_encode(['value' => []]);
                     } else {
                         Craft::warning("EasyApi: Handler not callable: {$api->postImportHandler}", __METHOD__);
                     }

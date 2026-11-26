@@ -1,6 +1,14 @@
 # Release Notes for Easy API
 
 
+## 6.2.9 - 2026-11-26
+
+-When an API has a `postImportHandler` configured, the handler now owns the import exclusively: Easy API invokes it with the fetched data as before, but hands Feed Me an empty payload so no elements are created through the field mapping. Previously both ran, so feeds with handlers (e.g. user/contact imports) produced duplicate elements — Feed Me created elements from the mapping while the handler created its own. If the handler is missing/not callable, Feed Me import proceeds unchanged as a fallback.
+
+## 6.2.8 - 2026-11-26
+
+-Fixed the detached queue runner spawn under mod_php: `PHP_BINARY` resolves to the Apache binary on `php:-apache` containers, so `easyapi/apis/run-queue` silently failed to execute. `_phpCliBinary()` now falls back to the PHP CLI in `PHP_BINDIR` for any non-CLI SAPI.
+
 ## 6.2.7 - 2026-11-24
 
 -Fixed a Twig error on the settings page: the `sleepTime` field used a `numberField` form macro that doesn't exist in Craft CMS. It now uses `textField` with `type: 'number'`, matching Craft core conventions.
